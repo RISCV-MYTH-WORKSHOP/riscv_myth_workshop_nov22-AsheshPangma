@@ -45,7 +45,6 @@
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2];
-
       @1
          $instr[31:0] = $imem_rd_data[31:0];
 //instruction types decoder         
@@ -100,10 +99,6 @@
          
          $rf_rd_en1 = $rs1_valid;
          $rf_rd_en2 = $rs2_valid;
-         ?$rf_rd_en1
-            $rf_rd_data1[32:0] = /xreg[$rf_rd_index1]>>1$value;
-         ?$rf_rd_en2
-            $rf_rd_data2[32:0] = /xreg[$rf_rd_index2]>>1$value; 
          
          $rf_wr_en = 1'b0;
          $rf_wr_index[4:0] = 5'b0;
@@ -111,6 +106,10 @@
 //register file read 2
          $src1_value = $rf_rd_data1;
          $src2_value = $rf_rd_data2;
+//alu
+         $result[32:0] = $is_addi ? $src1_value + $imm :
+            $is_add ? $src1_value + $src2_value : 32'bx;
+//register file write
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
