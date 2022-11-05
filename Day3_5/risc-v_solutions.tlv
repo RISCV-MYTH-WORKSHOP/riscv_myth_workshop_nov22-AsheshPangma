@@ -44,6 +44,9 @@
          $pc[31:0] = >>1$reset ? 32'b0 : >>1$pc[31:0] + 32'd4;
          $imem_rd_en = ! $reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2];
+      ?$imem_rd_en
+         @1   
+            $imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
       @1
          $instr[31:0] = $imem_rd_data[31:0];
          
@@ -63,6 +66,13 @@
             $is_u_instr ? { $instr[31:12], 12'b0} :
             $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], 
                $instr[30:21], 1'b0 } : 32'b0;
+         
+         $rs1[4:0] = $instr[19:15];
+         $rs2[4:0] = $instr[24:20];
+         $rd[4:0] = $instr[11:7];
+         $opcode[6:0] = $instr[6:0];
+         $funct7[7:0] = $instr[31:25];
+         $funct3[2:0] = $instr[14:12];
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
