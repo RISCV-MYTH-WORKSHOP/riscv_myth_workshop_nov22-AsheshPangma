@@ -50,6 +50,9 @@
       //?$imem_rd_en
             //@1
             //$imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
+// 3-cycle valid
+         $start = >>1$reset && ! $reset;
+         $valid = $reset ? 1'b0 : $start ? 1'b1 : >>3$valid ;
       @1
          $instr[31:0] = $imem_rd_data[31:0];
 //instruction types decoder         
