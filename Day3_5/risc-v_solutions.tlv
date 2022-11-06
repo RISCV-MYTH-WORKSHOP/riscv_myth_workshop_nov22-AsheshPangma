@@ -32,8 +32,7 @@
    m4_asm(ADDI, r13, r13, 1)            // Increment intermediate register by 1
    m4_asm(BLT, r13, r12, 1111111111000) // If a3 is less than a2, branch to label named <loop>
    m4_asm(ADD, r10, r14, r0)            // Store final result to register a0 so that it can be read by main program
-   m4_asm(SW, r0, r10, 10000)           // Store the value of r10 into address 17.
-   m4_asm(LW, r17, r0, 10000)           // Load the value from 
+   
    // Optional:
    // m4_asm(JAL, r7, 00000000000000000000) // Done. Jump to itself (infinite loop). (Up to 20-bit signed immediate plus implicit 0 bit (unlike JALR) provides byte address; last immediate bit should also be 0)
    m4_define_hier(['M4_IMEM'], M4_NUM_INSTRS)
@@ -43,9 +42,7 @@
          $reset = *reset;
 //next pc
 //day5 increasing pc every cycle
-         $pc[31:0] = >>1$reset ? 32'b0 :
-            >>3$valid_taken_br ? >>3$br_tgt_pc :
-            >>3$valid_load ? >>3$inc_pc : >>1$inc_pc;
+         $pc[31:0] = >>1$reset ? 32'b0 : >>3$valid_taken_br ? >>3$br_tgt_pc :  >>1$inc_pc;
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[31:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
@@ -137,13 +134,14 @@
               $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
 //register file read 1
       @2
+         $rf_rd_index1[4:0] = $rs1;
+         $rf_rd_index2[4:0] = $rs2;
+
          $rf_rd_en1 = $rs1_valid;
          $rf_rd_en2 = $rs2_valid;
          //?$rf_rd_en1
-         $rf_rd_index1[4:0] = $rs1;
             //$rf_rd_data1[32:0] = /xreg[$rf_rd_index1]>>1$value;
          //?$rf_rd_en2
-         $rf_rd_index2[4:0] = $rs2;
             //$rf_rd_data2[32:0] = /xreg[$rf_rd_index2]>>1$value; 
 
 //register file read 2 ($src1_value[31:0] = $rf_rd_data1; $src2_value[31:0] = $rf_rd_data2;)
@@ -178,18 +176,16 @@
             $is_srai ? { {32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
             $is_slt ? ($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]} :
             $is_slti ? ($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]} :
-            $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] : 
-            $is_load ? $src1_value + $imm :
-            $is_s_instr ? $src1_value + $imm : 32'bx ;
+            $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] : 32'bx ;
+
 //register file write
-//register write is enabled when the destination is valid and the register is not x0 register
-//no register write when the instruction is invalid
-         
-         $rf_wr_en = ($rd_valid && $valid && $rd != 5'b0) || >>2$valid_load;
-         $rf_wr_index[4:0] = >>2$valid_load ? >>2$rd : $rd;
-//register file write $rf_wr_data[31:0] = $result;
-//register file write with load instruction
-         $rf_wr_data[31:0] = >>2$valid_load ? >>2$ld_data : $result;
+         //register write is enabled when the destination is valid and the register is not x0 register
+         //no register write when the instruction is invalid
+         $rf_wr_index[4:0] = $rd;
+         $rf_wr_en = $rd_valid && ($rd != 5'b0) && $valid;
+
+
+         $rf_wr_data[31:0] = $result;
 
 //branch part 1
          $taken_br = $is_beq ? ($src1_value == $src2_value) :
@@ -201,21 +197,8 @@
 
 //The value of pc is updated as: $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc : >>1$pc[31:0] + 32'd4;
          $valid_taken_br = $valid && $taken_br;
-//day5 branches $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br);
-//day5 load redirecting
-         $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br || >>1$valid_load || >>2$valid_load);
-         $valid_load = $valid || $is_load;
-      
-      @4
-         $dmem_rd_en = $is_load;
-         
-         $dmem_wr_en = $is_s_instr && $valid;
-         $dmem_wr_data[31:0] = $src2_value;
-         
-         $dmem_addr[3:0] = $result[5:2];
-//day5 data loaded part2
-      @5
-         $ld_data[31:0] = $dmem_rd_data;
+//day5 branches
+         $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br);
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
@@ -223,7 +206,6 @@
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = |cpu/xreg[10]>>6$value == (1+2+3+4+5+6+7+8+9) ;
    //*passed = *cyc_cnt > 40;
-   //*passed = |cpu/xreg[17]$value;
    *failed = 1'b0;
 
    // Macro instantiations for:
@@ -234,7 +216,7 @@
    |cpu
       m4+imem(@1)    // Args: (read stage)
       m4+rf(@2, @3)  // Args: (read stage, write stage) - if equal, no register bypass is required
-      m4+dmem(@4)    // Args: (read/write stage)
+      //m4+dmem(@4)    // Args: (read/write stage)
 
    m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic. @4 would work for all labs.
 \SV
