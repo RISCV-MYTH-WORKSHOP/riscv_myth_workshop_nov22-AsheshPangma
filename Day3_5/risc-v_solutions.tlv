@@ -41,7 +41,8 @@
       @0
          $reset = *reset;
 //next pc
-         $pc[31:0] = >>1$reset ? 32'b0 : >>1$pc[31:0] + 32'd4;
+         $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc :
+            >>1$pc[31:0] + 32'd4;
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2];
@@ -95,22 +96,19 @@
          $is_bgeu = $dec_bits ==? 11'bx_111_1100011;
          $is_add = $dec_bits ==? 11'b0_000_0110011;
          $is_addi = $dec_bits ==? 11'bx_000_0010011;
-         
+
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_add $is_addi)
 //register file read 1
          $rf_rd_index1[4:0] = $rs1;
          $rf_rd_index2[4:0] = $rs2;
-         
+
          $rf_rd_en1 = $rs1_valid;
          $rf_rd_en2 = $rs2_valid;
          //?$rf_rd_en1
             //$rf_rd_data1[32:0] = /xreg[$rf_rd_index1]>>1$value;
          //?$rf_rd_en2
             //$rf_rd_data2[32:0] = /xreg[$rf_rd_index2]>>1$value; 
-         
-         
-         
-         
+
 //register file read 2
          $src1_value[31:0] = $rf_rd_data1;
          $src2_value[31:0] = $rf_rd_data2;
@@ -118,10 +116,21 @@
          $result[31:0] = $is_addi ? $src1_value + $imm :
             $is_add ? $src1_value + $src2_value : 32'bx;
 //register file write
-//register write is enabled when the destination is valid and the register is not x0 register
+         //register write is enabled when the destination is valid and the register is not x0 register
          $rf_wr_en = $rd_valid && ($rd != 5'b0);
          $rf_wr_data[31:0] = $result;
          $rf_wr_index[4:0] = $rd;
+//branch part 1
+         $taken_br = $is_beq ? ($src1_value == $src2_value) :
+            $is_bne ? ($src1_value != $src2_value) :
+            $is_blt ? (($src1_value < $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+            $is_bge ? (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
+            $is_bltu ? ($src1_value < $src2_value) :
+            $is_bgeu ? ($src1_value >= $src2_value) : 1'b0;
+//branch part 2
+         $br_tgt_pc = $pc + $imm;
+//The value of pc is updated as: $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc : >>1$pc[31:0] + 32'd4;
+
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
