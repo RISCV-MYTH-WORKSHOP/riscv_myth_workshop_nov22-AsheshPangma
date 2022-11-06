@@ -41,8 +41,8 @@
       @0
          $reset = *reset;
 //next pc
-         $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc :
-            >>1$pc[31:0] + 32'd4;
+
+         $pc[31:0] = >>1$reset ? 32'b0 : >>3$valid_taken_br ? >>3$br_tgt_pc :  >>3$inc_pc;
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[3-1:0] = $pc[3+1:2];
@@ -50,10 +50,12 @@
       //?$imem_rd_en
             //@1
             //$imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
-// 3-cycle valid
+// 3-cycle valid day5
          $start = >>1$reset && ! $reset;
          $valid = $reset ? 1'b0 : $start ? 1'b1 : >>3$valid ;
+
       @1
+         $inc_pc[31:0] = $pc + 32'd4;
          $instr[31:0] = $imem_rd_data[31:0];
 //instruction types decoder         
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
@@ -102,6 +104,7 @@
 
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_add $is_addi)
 //register file read 1
+      @2
          $rf_rd_index1[4:0] = $rs1;
          $rf_rd_index2[4:0] = $rs2;
 
@@ -115,14 +118,21 @@
 //register file read 2
          $src1_value[31:0] = $rf_rd_data1;
          $src2_value[31:0] = $rf_rd_data2;
+//branch part 2
+         $br_tgt_pc[31:0] = $pc + $imm;
 //alu
+      @3
          $result[31:0] = $is_addi ? $src1_value + $imm :
             $is_add ? $src1_value + $src2_value : 32'bx;
 //register file write
          //register write is enabled when the destination is valid and the register is not x0 register
-         $rf_wr_en = $rd_valid && ($rd != 5'b0);
-         $rf_wr_data[31:0] = $result;
+         //no register write when the instruction is invalid
          $rf_wr_index[4:0] = $rd;
+         $rf_wr_en = $rd_valid && ($rd != 5'b0) && $valid;
+
+
+         $rf_wr_data[31:0] = $result;
+
 //branch part 1
          $taken_br = $is_beq ? ($src1_value == $src2_value) :
             $is_bne ? ($src1_value != $src2_value) :
@@ -130,20 +140,19 @@
             $is_bge ? (($src1_value >= $src2_value) ^ ($src1_value[31] != $src2_value[31])) :
             $is_bltu ? ($src1_value < $src2_value) :
             $is_bgeu ? ($src1_value >= $src2_value) : 1'b0;
-//branch part 2
-         $br_tgt_pc[31:0] = $pc + $imm;
+
 //The value of pc is updated as: $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc : >>1$pc[31:0] + 32'd4;
+         $valid_taken_br = $valid && $taken_br;
 
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
 
-   
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9) ;
+   *passed = |cpu/xreg[10]>>6$value == (1+2+3+4+5+6+7+8+9) ;
    //*passed = *cyc_cnt > 40;
    *failed = 1'b0;
-   
+
    // Macro instantiations for:
    //  o instruction memory
    //  o register file
@@ -151,9 +160,9 @@
    //  o CPU visualization
    |cpu
       m4+imem(@1)    // Args: (read stage)
-      m4+rf(@1, @1)  // Args: (read stage, write stage) - if equal, no register bypass is required
+      m4+rf(@2, @3)  // Args: (read stage, write stage) - if equal, no register bypass is required
       //m4+dmem(@4)    // Args: (read/write stage)
-   
+
    m4+cpu_viz(@4)    // For visualisation, argument should be at least equal to the last stage of CPU logic. @4 would work for all labs.
 \SV
    endmodule
