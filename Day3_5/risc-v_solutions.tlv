@@ -42,7 +42,9 @@
          $reset = *reset;
 //next pc
 //day5 increasing pc every cycle
-         $pc[31:0] = >>1$reset ? 32'b0 : >>3$valid_taken_br ? >>3$br_tgt_pc :  >>1$inc_pc;
+         $pc[31:0] = >>1$reset ? 32'b0 :
+            >>3$valid_taken_br ? >>3$br_tgt_pc :
+            >>3$valid_load ? >>3$inc_pc : >>1$inc_pc;
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[31:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
@@ -197,8 +199,10 @@
 
 //The value of pc is updated as: $pc[31:0] = >>1$reset ? 32'b0 : >>1$taken_br ? >>1$br_tgt_pc : >>1$pc[31:0] + 32'd4;
          $valid_taken_br = $valid && $taken_br;
-//day5 branches
-         $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br);
+//day5 branches $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br);
+//day5 load redirecting
+         $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br || >>1$valid_load || >>2$valid_load);
+         $valid_load = $valid || $is_load;
       // Note: Because of the magic we are using for visualisation, if visualisation is enabled below,
       //       be sure to avoid having unassigned signals (which you might be using for random inputs)
       //       other than those specifically expected in the labs. You'll get strange errors for these.
