@@ -45,11 +45,13 @@
 //day5 increasing pc every cycle
          $pc[31:0] = >>1$reset ? 32'b0 :
             >>3$valid_taken_br ? >>3$br_tgt_pc :
-            >>3$valid_load ? >>3$inc_pc : >>1$inc_pc;
+            >>3$valid_load ? >>3$inc_pc :
+            (>>3$valid_jump && >>3$is_jal) ? >>3$br_tgt_pc :
+            (>>3$valid_jump && >>3$is_jalr) ? >>3$jalr_tgt_pc : >>1$inc_pc;
 //fetch
          $imem_rd_en = ! $reset;
          $imem_rd_addr[31:0] = $pc[M4_IMEM_INDEX_CNT+1:2];
-      //The read data is the instruction from the instruction memory at the read address
+//The read data is the instruction from the instruction memory at the read address
       //?$imem_rd_en
             //@1
             //$imem_rd_data[31:0] = /imem[$imem_rd_addr]$instr;
@@ -62,21 +64,21 @@
          $instr[31:0] = $imem_rd_data[31:0];
 //instruction types decoder         
          $is_i_instr = $instr[6:2] ==? 5'b0000x ||
-            $instr[6:2] ==? 5'b001x0 || $instr[6:2] ==? 5'b11001;
+                       $instr[6:2] ==? 5'b001x0 ||
+                       $instr[6:2] ==? 5'b11001;
          $is_j_instr = $instr[6:2] ==? 5'b11011;
          $is_r_instr = $instr[6:2] ==? 5'b01011 ||
-            $instr[6:2] ==? 5'b011x0 || $instr[6:2] ==? 5'b10100;
+                       $instr[6:2] ==? 5'b011x0 ||
+                       $instr[6:2] ==? 5'b10100;
          $is_s_instr = $instr[6:2] ==? 5'b0100x;
          $is_b_instr = $instr[6:2] ==? 5'b11000;
          $is_u_instr = $instr[6:2] ==? 5'b0x101;
 //instruction immediate decoder         
          $imm[31:0] = $is_i_instr ? { {21{$instr[31]}}, $instr[30:20] } :
             $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7]} :
-            $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], 
-               $instr[11:8], 1'b0} :
+            $is_b_instr ? { {20{$instr[31]}}, $instr[7], $instr[30:25], $instr[11:8], 1'b0} :
             $is_u_instr ? { $instr[31:12], 12'b0} :
-            $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], 
-               $instr[30:21], 1'b0 } : 32'b0;
+            $is_j_instr ? { {12{$instr[31]}}, $instr[19:12], $instr[20], $instr[30:21], 1'b0 } : 32'b0;
 //RISC-V instruction field decoder               
          $opcode[6:0] = $instr[6:0];
          $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
@@ -90,12 +92,13 @@
             $rd[4:0] = $instr[11:7];
          $funct7_valid = $is_r_instr;
          ?$funct7_valid
-            $funct7[7:0] = $instr[31:25];
+            $funct7[6:0] = $instr[31:25];
          $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
          ?$funct3_valid
             $funct3[2:0] = $instr[14:12];
 //instruction decoder            
          $dec_bits[10:0] = {$funct7[5], $funct3, $opcode};
+         
          $is_beq = $dec_bits ==? 11'bx_000_1100011;
          $is_bne = $dec_bits ==? 11'bx_001_1100011;
          $is_blt = $dec_bits ==? 11'bx_100_1100011;
@@ -130,64 +133,68 @@
          $is_or = $dec_bits ==? 11'b0_110_0110011;
          $is_and = $dec_bits ==? 11'b0_111_0110011;
          $is_load = $opcode == 7'b0000011;
-
+//jump
+         $is_jump = $is_jal || $is_jalr;
+         
          `BOGUS_USE($is_beq $is_bne $is_blt $is_bge $is_bltu $is_bgeu $is_add $is_addi
             $is_lui $is_auipc $is_jal $is_jalr $is_sb $is_sh $is_sw $is_slti $is_sltiu
              $is_xori $is_ori $is_andi $is_slli $is_srli $is_srai $is_sub $is_sll $is_slt
               $is_sltu $is_xor $is_srl $is_sra $is_or $is_and)
 //register file read 1
       @2
-         $rf_rd_index1[4:0] = $rs1;
-         $rf_rd_index2[4:0] = $rs2;
-
          $rf_rd_en1 = $rs1_valid;
          $rf_rd_en2 = $rs2_valid;
          //?$rf_rd_en1
+         $rf_rd_index1[4:0] = $rs1;
             //$rf_rd_data1[32:0] = /xreg[$rf_rd_index1]>>1$value;
          //?$rf_rd_en2
+         $rf_rd_index2[4:0] = $rs2;
             //$rf_rd_data2[32:0] = /xreg[$rf_rd_index2]>>1$value; 
 
 //register file read 2 ($src1_value[31:0] = $rf_rd_data1; $src2_value[31:0] = $rf_rd_data2;)
-//register file bypass
+//register file bypass inputs to ALU
          $src1_value[31:0] = (>>1$rf_wr_index == $rf_rd_index1) && >>1$rf_wr_en ? >>1$result : $rf_rd_data1;
          $src2_value[31:0] = (>>1$rf_wr_index == $rf_rd_index2) && >>1$rf_wr_en ? >>1$result : $rf_rd_data2;
-//branch part 2
+//branch target pc part 2
          $br_tgt_pc[31:0] = $pc + $imm;
+//jump target pc
+         $jalr_tgt_pc[31:0] = $src1_value + $imm;
 //alu
       @3
-         $sltu_rslt[31:0] = $src1_value < $src2_value;
-         $sltiu_rslt[31:0] = $src1_value < $imm;
+         $sltu_rslt = $src1_value < $src2_value;
+         $sltiu_rslt = $src1_value < $imm;
+         
          $result[31:0] = $is_addi ? $src1_value + $imm :
-            $is_add ? $src1_value + $src2_value :
-            $is_andi ? $src1_value & $imm :
-            $is_ori ? $src1_value | $imm :
-            $is_xori ? $src1_value ^ $imm :
-            $is_slli ? $src1_value << $imm[5:0] :
-            $is_srli ? $src1_value >> $imm[5:0] :
-            $is_and ? $src1_value & $src2_value :
-            $is_or ? $src1_value | $src2_value :
-            $is_xor ? $src1_value ^ $src2_value :
-            $is_sub ? $src1_value - $src2_value :
-            $is_sll ? $src1_value << $src2_value[4:0] :
-            $is_srl ? $src1_value >> $src2_value[4:0] :
-            $is_sltu ? $sltu_rslt :                     //$is_sltu ? $src1_value < $src2_value
-            $is_sltiu ? $sltiu_rslt :                   //$is_sltiu ? $src1_value < $imm
-            $is_lui ? { $imm[31:12], 12'b0} :
-            $is_auipc ? $pc + $imm :
-            $is_jal ? $pc + 4 :
-            $is_jalr ? $pc + 4 :
-            $is_srai ? { {32{$src1_value[31]}}, $src1_value} >> $imm[4:0] :
-            $is_slt ? ($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]} :
-            $is_slti ? ($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]} :
-            $is_sra ? { {32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0] : 
-            $is_load ? $src1_value + $imm :
-            $is_s_instr ? $src1_value + $imm : 32'bx ;
+                        $is_add ? $src1_value + $src2_value :
+                        $is_andi ? $src1_value & $imm :
+                        $is_ori ? $src1_value | $imm :
+                        $is_xori ? $src1_value ^ $imm :
+                        $is_slli ? $src1_value << $imm[5:0] :
+                        $is_srli ? $src1_value >> $imm[5:0] :
+                        $is_and ? $src1_value & $src2_value :
+                        $is_or ? $src1_value | $src2_value :
+                        $is_xor ? $src1_value ^ $src2_value :
+                        $is_sub ? $src1_value - $src2_value :
+                        $is_sll ? $src1_value << $src2_value[4:0] :
+                        $is_srl ? $src1_value >> $src2_value[4:0] :
+                        $is_sltu ? $sltu_rslt :                     //$is_sltu ? $src1_value < $src2_value
+                        $is_sltiu ? $sltiu_rslt :                   //$is_sltiu ? $src1_value < $imm
+                        $is_lui ? { $imm[31:12], 12'b0} :
+                        $is_auipc ? $pc + $imm :
+                        $is_jal ? $pc + 4 :
+                        $is_jalr ? $pc + 4 :
+                        $is_srai ? ({ {32{$src1_value[31]}}, $src1_value}) >> $imm[4:0] :
+                        $is_slt ? (($src1_value[31] == $src2_value[31]) ? $sltu_rslt : {31'b0, $src1_value[31]}) :
+                        $is_slti ? (($src1_value[31] == $imm[31]) ? $sltiu_rslt : {31'b0, $src1_value[31]}) :
+                        $is_sra ? ({{32{$src1_value[31]}}, $src1_value} >> $src2_value[4:0]) :
+                        $is_load ? $src1_value + $imm :
+                        $is_s_instr ? $src1_value + $imm : 32'bx ;
 //register file write
 //register write is enabled when the destination is valid and the register is not x0 register
 //no register write when the instruction is invalid
-         $rf_wr_index[4:0] = >>2$valid_load ? >>2$rd : $rd;
+         
          $rf_wr_en = ($rd_valid && $valid && $rd != 5'b0) || >>2$valid_load;
-
+         $rf_wr_index[4:0] = >>2$valid_load ? >>2$rd : $rd;
 //register file write $rf_wr_data[31:0] = $result;
 //register file write with load instruction
          $rf_wr_data[31:0] = >>2$valid_load ? >>2$ld_data : $result;
@@ -204,13 +211,14 @@
          $valid_taken_br = $valid && $taken_br;
 //day5 branches $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br);
 //day5 load redirecting
-         $valid = ! (>>1$valid_taken_br || >>2$valid_taken_br || >>1$valid_load || >>2$valid_load);
-         $valid_load = $valid || $is_load;
-      
+         $valid = !(>>1$valid_taken_br || >>2$valid_taken_br || >>1$valid_load || >>2$valid_load || >>1$valid_jump || >>2$valid_jump);
+         $valid_load = $valid && $is_load;
+//valid jump
+         $valid_jump = $valid && $is_jump;
       @4
          $dmem_rd_en = $is_load;
          
-         $dmem_wr_en = $is_s_instr && $valid;
+         $dmem_wr_en = $valid && $is_s_instr;
          $dmem_wr_data[31:0] = $src2_value;
          
          $dmem_addr[3:0] = $result[5:2];
