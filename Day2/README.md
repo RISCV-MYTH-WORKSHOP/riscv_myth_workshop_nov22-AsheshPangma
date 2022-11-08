@@ -44,15 +44,49 @@ In Linux, GNU Toolchain can be used to make and compile code to produce a proge=
 
 ![](images/day1/1_1.1_sum1tonCode.png)
 
+  * To run this C program we use the following command:
+  ```
+  gcc sum1ton.c
+  ./a.out
+  ``` 
+The below figure shows the output.
+![](images/day1/1_1.2_sum1tonRun.png)
+
+To view assembly code, we use the following command:
+
 `riscv64-unknown-elf-objdump -d <object filename>`
+
+![](images/day1/1_1.3_main.png)
+
+We can also use Spike simulator to run risc-v object file using the following command:
 
 `spike pk <object filename>`
 
+Spike debugger can be used using the following command:
+
 `spike -d pk <object Filename>`
+
+The code below is used to run our program till the given PC(Program Counter).
 
 `until pc 0 <pc of your choice>`
 
-Follow the below link to install complete risc-v toolchain locally on linux machine
+![](images/day1/1_2_sum1tonDebug.png)
+
+The following C code is used to print the highest unsigned integer that can be represented in risc-v.
+
+![](images/day1/1_3_unsignedHighestCode.png)
+
+![](images/day1/1_9_unsignedHighestRun.png)
+
+The following C code is used to print the highest and lowest signed integer that can be represented in risc-v.
+
+![](images/day1/1_10_signedHighestCode.png)
+
+![](images/day1/1_11_signedHighestCodeRun.png)
+
+
+
+Follow the below link to install complete risc-v toolchain locally on linux machine.
 
   * [RISC-V GNU Toolchain](http://hdlexpress.com/RisKy1/How2/toolchain/toolchain.html)
   * [RISC-V ISA Simulator - Spike](https://github.com/kunalg123/riscv_workshop_collaterals)
