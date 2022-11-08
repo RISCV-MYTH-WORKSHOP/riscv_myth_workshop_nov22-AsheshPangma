@@ -83,7 +83,6 @@ The following C code is used to print the highest unsigned integer that can be r
 
 The following C code is used to print the highest and lowest signed integer that can be represented in risc-v.
 
-![](images/day1/1_10_signedHighestCode.png)
 
 ![](images/day1/1_11_signedHighestCodeRun.png)
 
@@ -97,11 +96,38 @@ Follow the below link to install complete risc-v toolchain locally on linux mach
 
 # Day 2 Introductoion to ABI and basic verification flow
 
+An ABI(Application Binary Interface) is used for translating relocatable machine code to absolute machine code specific to the architecture of machine. This means, ABI interface are used by application program to access the register specific to the architecture. In out case, it is RISC-V and there are 32 registers that can be used by applicatio programmer.
+First we clone the repository as shown in the figure below:
+
 ![](images/day2/2_1_ls.png)
+
+The picture below shows us the C program and the load function that the C program calls.
+
+![](images/day2/2_1.1_sum1to9.png)
+
+We run the C program using RISC-V gcc compiler as shown by the picture below below:
+
+![](images/day2/2_1.2_sum1to9Run.png)
+
+The assembly code for the above run is shown below:
+
+![](images/day2/2_1.3_sum1to9main.png)
+
+
+
+
+
+The following picture shows the script that is used to create hex file and load the files in picorv32 memory and run it. Iverilog takes testbench.v and picorv32.v as inputs and gives testbench.vvp as output.
+
+![](images/day2/2_3_rvimsh.png)
+
+
+
+The verilog code for testbench.v is shown by the picture below. Here, we see picorv32 is the uut(unit under test) and the hex file being loaded in the testbench.
 
 ![](images/day2/2_2_testFile.png)
 
-![](images/day2/2_3_rvimsh.png)
+First we make the script executable and then run the script. The output is obtained as shown below:
 
 ![](images/day2/2_4_run.png)
 
