@@ -26,6 +26,7 @@ This repository provides all the information required to build RISC-V pipelined 
   * [Pipelining the CPU](#pipelining-the-cpu)
   * [Load and store instructions and memory](#load-and-store-instructions-and-memory)
   * [Completing the RISC-V CPU](#completing-the-risc---v-cpu)
+- [Acknowledgement](#acknowledgement)
 
 # Day 1 Introduction to RISC-V ISA and GNU compiler toolchain
 
@@ -72,6 +73,8 @@ The code below is used to run our program till the given PC(Program Counter).
 
 ![](images/day1/1_2_sum1tonDebug.png)
 
+## Signed and unsigned arithmetic operation
+
 The following C code is used to print the highest unsigned integer that can be represented in risc-v.
 
 ![](images/day1/1_3_unsignedHighestCode.png)
@@ -94,13 +97,25 @@ Follow the below link to install complete risc-v toolchain locally on linux mach
 
 # Day 2 Introductoion to ABI and basic verification flow
 
+![](images/day2/2_1_ls.png)
+
+![](images/day2/2_2_testFile.png)
+
+![](images/day2/2_3_rvimsh.png)
+
+![](images/day2/2_4_run.png)
+
+
+
+
+
 # Day 3 Digital Logic with TL-verilog and Makerchip
 
 # Day 4 Basic RISC-V CPU micro-architecture
 
 # Day 5 Complete Pipelined RISC-V CPU micro-architecture/store
 
-- [Acknowledgement](#acknowledgement)
+## [Acknowledgement](#acknowledgement)
   * Kunal Ghosh, Co-founder, VSD Corp. Pvt. Ltd.
   * Steve Hoover, Founder, Redwood EDA
   * Shivam Potdar, GSoC 2020 @fossi-foundation
