@@ -113,15 +113,9 @@ The assembly code for the above run is shown below:
 
 ![](images/day2/2_1.3_sum1to9main.png)
 
-
-
-
-
 The following picture shows the script that is used to create hex file and load the files in picorv32 memory and run it. Iverilog takes testbench.v and picorv32.v as inputs and gives testbench.vvp as output.
 
 ![](images/day2/2_3_rvimsh.png)
-
-
 
 The verilog code for testbench.v is shown by the picture below. Here, we see picorv32 is the uut(unit under test) and the hex file being loaded in the testbench.
 
@@ -130,9 +124,6 @@ The verilog code for testbench.v is shown by the picture below. Here, we see pic
 First we make the script executable and then run the script. The output is obtained as shown below:
 
 ![](images/day2/2_4_run.png)
-
-
-
 
 
 # Day 3 Digital Logic with TL-verilog and Makerchip
@@ -148,7 +139,6 @@ $out = ! $in;
 We even do not need to declare the input `$in` and `$out` signals. No assignment is required for `$in` signal. The IDE automatically provides random stimulus and produce a warning. The below snapshot shows a combinational calculator.
 ![](images/day3/3_1_combinationalCalculator.png)
 
-
 ## Sequential logic
 
 For sequential logic, we take an example of Fibonacci series with a reset signal. 
@@ -159,7 +149,6 @@ The `>>1`  and `>>2` operator denotes that the value of the signal provided is 1
 Below snapshot shows a sequential calculator.
 
 ![](images/day3/3_2_sequentialCalculator.png)
-
 
 ## Pipelined logic
 
@@ -177,13 +166,61 @@ The snapshot below shows our the design of our calculator.
 ![](images/day3/3_1_calculatorFinal.png)
 
 
-
-
-
-
 # Day 4 Basic RISC-V CPU micro-architecture
 
+We focused in designing the basis of processor. The fetch, decode and execute stages for RISC-V ISA were programmed in our fourth day of the workshop. At the end, we also added a control logic for branch instruction.
+
+## Fetch
+
+PC(Program Counter) holds the address of next instruction to be executed and IM(Instruction Memory) holds the set of instructions to be executed. At this stage, the processor fetch the instruction from the Instruction Memory pointed by address given by PC. The below snapshot shows the Fetch stage of our design that is done in Makerchip IDE.
+
+
+## Decode
+
+We decode the fetched instruction in this stage. RISC-V ISA has 6 types of instruction that are as follows:
+  * R-type - Register
+  * I-type - Immediate
+  * S-type - Store
+  * B-type - Branch (Conditional Jump)
+  * U-type - Upper Immediate
+  * J-type - Jump (Unconditional Jump)
+$imem_rd_data[6:2] determines the type of instruction that is being fetched.  $funct7, $funct3 and $opcode determines the type of instruction that is being decoded. 
+
+## Read and Write Register File
+
+The register file provided is a 2 read, 1 write register. This means that it supports 2 read and 1 write operation simultaneously. There are 8 input signals and two output signal for the register file.
+Inputs:
+  * $reset              - reset signal
+  * $rf_wr_en           - Enable signal to perform write operation
+  * $rf_wr_index[4:0]   - Address where data has to be written
+  * $rf_wr_data[31:0]   - Data to be written at write address
+  * $rf_rd_en1          - Enable signal to perform read operation
+  * $rf_rd_index1[4:0]  - Address1 from where data has to be read
+  * $rf_rd_en2          - Enable signal to perform read operation from Address2
+  * $rf_rd_index2[4:0]  - Address2 from where data has to be read
+Outputs:
+  * $rf_rd_data1        - Data read from Address1
+  * $rf_rd_data2        - Data read from Address2
+
+
+## Execute
+
+
+
+## RISC-V Control Logic
+
+
+
+
+
+
 # Day 5 Complete Pipelined RISC-V CPU micro-architecture/store
+
+## Pipelining the CPU
+
+## Load and Store instructions and memory
+
+## Completing the RISC-V CPU
 
 ## [Acknowledgement](#acknowledgement)
   * Kunal Ghosh, Co-founder, VSD Corp. Pvt. Ltd.
