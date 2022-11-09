@@ -137,6 +137,50 @@ First we make the script executable and then run the script. The output is obtai
 
 # Day 3 Digital Logic with TL-verilog and Makerchip
 
+We used [makerchip](https://makerchip.com/) to develop our RISC-V core using TL-verilog. Makerchip is free and online environment for developing high quality integrated circuits. It provides various features for programmers to code, compile, simulate and debug the design. 
+
+## Combinational logic
+
+Our first design is an inverter which is a combinational circuit. The following code is used for designing an inverter in makerchip IDE:
+```
+$out = ! $in;
+```
+We even do not need to declare the input `$in` and `$out` signals. No assignment is required for `$in` signal. The IDE automatically provides random stimulus and produce a warning. The below snapshot shows a combinational calculator.
+![](images/day3/3_1_combinationalCalculator.png)
+
+
+## Sequential logic
+
+For sequential logic, we take an example of Fibonacci series with a reset signal. 
+```
+$num[31:0] = $reset ? 1 : (>>1$num + >>2$num)
+```
+The `>>1`  and `>>2` operator denotes that the value of the signal provided is 1 cycle before and 2 cycle before respectively.
+Below snapshot shows a sequential calculator.
+
+![](images/day3/3_2_sequentialCalculator.png)
+
+
+## Pipelined logic
+
+A powerful feature of TL-verilog is Timing abstract. It help to convert a code into pipeline stages thus increasing the frequency of operation. `|pipe` defines the pipeline and `@?` defines the stages in a pipeline.
+The snapshot below shows calculator with pipelined logic.
+
+## Validity
+
+The validity is denoted by using `?$valid`. This indicates the validity of the transaction and other times it indicates the transaction as don't care. The snapshot below shows 2-cycle calculator with validity.
+
+![](images/day3/3_5_calculatorWithValid.png)
+
+The snapshot below shows our the design of our calculator.
+
+![](images/day3/3_1_calculatorFinal.png)
+
+
+
+
+
+
 # Day 4 Basic RISC-V CPU micro-architecture
 
 # Day 5 Complete Pipelined RISC-V CPU micro-architecture/store
