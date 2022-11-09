@@ -173,7 +173,9 @@ We focused in designing the basis of processor. The fetch, decode and execute st
 ## Fetch
 
 PC(Program Counter) holds the address of next instruction to be executed and IM(Instruction Memory) holds the set of instructions to be executed. At this stage, the processor fetch the instruction from the Instruction Memory pointed by address given by PC. The below snapshot shows the Fetch stage of our design that is done in Makerchip IDE.
+The snapshot below shows the the Fetch stage.
 
+![](images/day4/4_1_fetch.png)
 
 ## Decode
 
@@ -184,7 +186,10 @@ We decode the fetched instruction in this stage. RISC-V ISA has 6 types of instr
   * B-type - Branch (Conditional Jump)
   * U-type - Upper Immediate
   * J-type - Jump (Unconditional Jump)
-$imem_rd_data[6:2] determines the type of instruction that is being fetched.  $funct7, $funct3 and $opcode determines the type of instruction that is being decoded. 
+$imem_rd_data[6:2] determines the type of instruction that is being fetched.  $funct7, $funct3 and $opcode determines the type of instruction that is being decoded.
+The snapshot below shows the Decode stage.
+
+![](images/day4/4_2_decode.png)
 
 ## Read and Write Register File
 
@@ -202,16 +207,25 @@ Outputs:
   * $rf_rd_data1        - Data read from Address1
   * $rf_rd_data2        - Data read from Address2
 
+The snapshot below shows the Register File Read followed by Register File Write operation.
+
+![](images/day4/4_3_registerRead.png)
+
+![](images/day4/4_4_registerWrite.png)
 
 ## Execute
 
+The decoded instruction is then executed on the operands from the register file. The $result signal holds the output of the ALU.
+The snapshot below shows Execute stage.
 
+![](images/day4/4_5_execution.png)
 
 ## RISC-V Control Logic
 
+The branch target address is calculated during decode stage and fed to into the PC mux. Branch condition is checked to determine the instruction to be executed. The PC is loaded with branch target address if the branch condition is true.
+The snapshot shows the control logic for branch instruction.
 
-
-
+![](images/day4/4_6_branch.png)
 
 
 # Day 5 Complete Pipelined RISC-V CPU micro-architecture/store
