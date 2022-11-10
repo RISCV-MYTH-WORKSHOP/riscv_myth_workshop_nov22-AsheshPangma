@@ -186,7 +186,7 @@ We decode the fetched instruction in this stage. RISC-V ISA has 6 types of instr
   * B-type - Branch (Conditional Jump)
   * U-type - Upper Immediate
   * J-type - Jump (Unconditional Jump)
-$imem_rd_data[6:2] determines the type of instruction that is being fetched.  $funct7, $funct3 and $opcode determines the type of instruction that is being decoded.
+$imem_rd_data[6:2] determines the type of instruction that is being fetched.  $funct7, $funct3 and $opcode determines the actual instruction that is being decoded.
 The snapshot below shows the Decode stage.
 
 ![](images/day4/4_2_decode.png)
@@ -230,11 +230,49 @@ The snapshot shows the control logic for branch instruction.
 
 # Day 5 Complete Pipelined RISC-V CPU micro-architecture/store
 
+By pipelining our CPU, we can increase the processing speed of our CPU using higher clock frequency. TL-Verilog provides timing abstract for easy retiming with no functional bugs. 
+
 ## Pipelining the CPU
+
+We can pipeline the CPU in TL-Verilog can be done in the following ways:
+```
+|<pipe-name>
+   @<pipe stage>
+      Codes...
+   
+   @<pipe stage>
+      Codes...
+```
+
+The code below is a test case of assembly program that sums 1 to 9 and stores the output to r10 of register file. The snapshot shows `r10 = 45`. 
+
+```
+*passed = |cpu/xreg[10]>>5$value == (1+2+3+4+5+6+7+8+9);
+```
+![](images/day5/5_1_testbench.png)
+
+![](images/day5/5_1_testbench.png)
 
 ## Load and Store instructions and memory
 
+We need data memory for reading and writing data. Load instruction will also have 3-cycle delay similar to branch instruction. The inputs and outputs signals for data memory are as follows:
+Inputs:
+  * $reset - Reset signal
+  * $dem_wr_en - Enable signal to perform write operation
+  * $dmem-addr[3:0] - Address specified from where data is read/write
+  * $dmem_wr_data[31:0] - Data to be written on Address(Store instruction)
+  * $dmem_rd_en - Enable signal to perform read operation
+Outputs:
+  * $dmem_rd_data - Data to be read from Address(Load Instruction)
+  
+The following test case is used to check the functionality of load/store instruction. The sum of 1 to 9 is stored on address 4 of the Data Memory and loaded the same value form Data Memory to r17.
+```
+*passed = |cpu/xreg[17]>>5$value == (1+2+3+4+5+6+7+8+9);
+```
+
 ## Completing the RISC-V CPU
+
+
 
 ## [Acknowledgement](#acknowledgement)
   * Kunal Ghosh, Co-founder, VSD Corp. Pvt. Ltd.
